@@ -3,6 +3,7 @@ package org.mpo
 import io.ktor.client.request.*
 import io.ktor.http.*
 import io.ktor.server.testing.*
+import org.mpo.app.module
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
