@@ -15,3 +15,16 @@ object LocationDictionary {
 
     fun getLocation(locationId: Int): LocationInfo? = locations[locationId]
 }
+
+enum class WeatherUnitType(val owmValue: String) {
+    CELSIUS("metric"),
+    FAHRENHEIT("imperial");
+
+    companion object {
+        fun fromString(param: String?): WeatherUnitType =
+            when (param?.lowercase()) {
+                "fahrenheit" -> FAHRENHEIT
+                else -> CELSIUS
+            }
+    }
+}

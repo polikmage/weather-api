@@ -6,6 +6,7 @@ import app.model.LocationForecastResponse
 import app.model.SummaryLocationTemperature
 import app.model.TemperatureForecast
 import app.model.WeatherSummaryResponse
+import app.model.WeatherUnitType
 
 class WeatherService {
 
@@ -22,9 +23,10 @@ class WeatherService {
         //return "Unit: $unit, Temperature: $temperature, Locations: $locations"
     }
 
-    suspend fun getLocationTemperatures(location: LocationDictionary.LocationInfo): LocationForecastResponse {
+    suspend fun getLocationTemperatures(location: LocationDictionary.LocationInfo, unit: WeatherUnitType
+    ): LocationForecastResponse {
 
-        val owmForecast = openWeatherMapClient.callWeatherApi(location)
+        val owmForecast = openWeatherMapClient.callWeatherApi(location, unit)
         println("Datetime and temperatures:")
         owmForecast.list.forEach { item ->
             println("${item.dateTime}: ${item.main.temp}°C")
