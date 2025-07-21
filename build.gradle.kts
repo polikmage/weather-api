@@ -8,6 +8,7 @@ plugins {
 group = "org.mpo"
 version = "0.0.1"
 
+
 application {
     mainClass = "io.ktor.server.netty.EngineMain"
 }
@@ -16,7 +17,13 @@ repositories {
     mavenCentral()
 }
 
+val ktor_version: String by project
+
+
 dependencies {
+    implementation("io.ktor:ktor-client-core:${ktor_version}")
+    implementation("io.ktor:ktor-client-cio:${ktor_version}")
+    implementation("io.ktor:ktor-client-content-negotiation:${ktor_version}")
     implementation(libs.ktor.server.call.logging)
     implementation(libs.ktor.server.content.negotiation)
     implementation(libs.ktor.server.core)
