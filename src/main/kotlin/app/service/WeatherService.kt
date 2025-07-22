@@ -7,27 +7,37 @@ import app.model.SummaryLocationTemperature
 import app.model.TemperatureForecast
 import app.model.WeatherSummaryResponse
 import app.model.WeatherUnitType
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.coroutineScope
+import org.slf4j.LoggerFactory
+import java.time.LocalDate
+import java.time.LocalDateTime
+import java.time.format.DateTimeFormatter
 
 class WeatherService {
-
+    val log = LoggerFactory.getLogger("WeatherService")
     val openWeatherMapClient = OpenWeatherMapClient()
     val weatherCache = WeatherCache()
 
-    suspend fun getSummary(unit: String, temperature: Int, locations: List<Int>): WeatherSummaryResponse {
-        val listOfLocationTemps: List<SummaryLocationTemperature> = listOf(
-            SummaryLocationTemperature(1234, true),
-            SummaryLocationTemperature(5678, false)
-        )
+    suspend fun getSummary(unit: WeatherUnitType, temperature: Int, locationInfos: List<LocationDictionary.LocationInfo>): WeatherSummaryResponse {
+        val results = coroutineScope {
+            locationInfos.map { locInfo ->
+                async {
+                    val forecast = getLocationForecast(locInfo, unit)
+                    SummaryLocationTemperature(
+                        locInfo.locationId,
+                        willBeWarmer = willBeAboveThresholdTomorrow(forecast,temperature)
+                    )
+                }
 
-        val weatherSummaryResponse = WeatherSummaryResponse(listOfLocationTemps)
-        return weatherSummaryResponse
+            }.awaitAll()
+        }
 
-
-        // for each location check cache or call getLocationTemperatures
-        //locations.
+        return WeatherSummaryResponse(results)
     }
 
-    suspend fun getLocationTemperatures(
+    suspend fun getLocationForecast(
         location: LocationDictionary.LocationInfo, unit: WeatherUnitType
     ): LocationForecastResponse {
 
@@ -37,9 +47,9 @@ class WeatherService {
         }
 
         val owmForecast = openWeatherMapClient.callWeatherApi(location, unit)
-        println("Datetime and temperatures:")
+        log.info("Datetime and temperatures:")
         owmForecast.list.forEach { item ->
-            println("${item.dateTime}: ${item.main.temp}°C")
+            log.info("${item.dateTime}: ${item.main.temp}°C")
         }
 
         val apiForecasts = owmForecast.list.map {
@@ -54,6 +64,19 @@ class WeatherService {
         weatherCache.setCache(locationForecastResponse)
 
         return locationForecastResponse
+    }
+
+    fun willBeAboveThresholdTomorrow(
+        response: LocationForecastResponse,
+        threshold: Int,
+        today: LocalDate = LocalDate.now() // for testability
+    ): Boolean {
+        val formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")
+        val tomorrow = today.plusDays(1)
+        return response.temperatureForecast.any { forecast ->
+            val forecastDate = LocalDateTime.parse(forecast.dateTime, formatter).toLocalDate()
+            forecastDate == tomorrow && forecast.temperature > threshold
+        }
     }
 
 }

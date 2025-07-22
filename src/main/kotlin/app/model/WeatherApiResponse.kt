@@ -25,8 +25,10 @@ data class TemperatureForecast(
     val temperature: Double
 )
 
-/*
 @Serializable
-data class Forecast(
-    val owmForecastResponse: OwmForecastResponse
-)*/
+data class ErrorResponse(
+    val status: Int,
+    val error: String,
+    val message: String
+)
+
