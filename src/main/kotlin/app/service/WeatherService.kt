@@ -11,6 +11,7 @@ import app.model.WeatherUnitType
 class WeatherService {
 
     val openWeatherMapClient = OpenWeatherMapClient()
+    val weatherCache = WeatherCache()
 
     suspend fun getSummary(unit: String, temperature: Int, locations: List<Int>): WeatherSummaryResponse {
         val listOfLocationTemps: List<SummaryLocationTemperature> = listOf(
@@ -20,11 +21,20 @@ class WeatherService {
 
         val weatherSummaryResponse = WeatherSummaryResponse(listOfLocationTemps)
         return weatherSummaryResponse
-        //return "Unit: $unit, Temperature: $temperature, Locations: $locations"
+
+
+        // for each location check cache or call getLocationTemperatures
+        //locations.
     }
 
-    suspend fun getLocationTemperatures(location: LocationDictionary.LocationInfo, unit: WeatherUnitType
+    suspend fun getLocationTemperatures(
+        location: LocationDictionary.LocationInfo, unit: WeatherUnitType
     ): LocationForecastResponse {
+
+        val cached = weatherCache.getCache(location.locationId)
+        if (cached != null) {
+            return cached
+        }
 
         val owmForecast = openWeatherMapClient.callWeatherApi(location, unit)
         println("Datetime and temperatures:")
@@ -39,7 +49,11 @@ class WeatherService {
             )
         }
 
-        return LocationForecastResponse(location, apiForecasts)
+        val locationForecastResponse = LocationForecastResponse(location, apiForecasts)
+
+        weatherCache.setCache(locationForecastResponse)
+
+        return locationForecastResponse
     }
 
 }
