@@ -15,19 +15,26 @@ import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 
-class WeatherService {
+class WeatherService(
+    private val apiKey: String,
+    private val apiUrl: String
+) {
     val log = LoggerFactory.getLogger("WeatherService")
-    val openWeatherMapClient = OpenWeatherMapClient()
+    val openWeatherMapClient = OpenWeatherMapClient(apiKey, apiUrl)
     val weatherCache = WeatherCache()
 
-    suspend fun getSummary(unit: WeatherUnitType, temperature: Int, locationInfos: List<LocationDictionary.LocationInfo>): WeatherSummaryResponse {
+    suspend fun getSummary(
+        unit: WeatherUnitType,
+        temperature: Int,
+        locationInfos: List<LocationDictionary.LocationInfo>
+    ): WeatherSummaryResponse {
         val results = coroutineScope {
             locationInfos.map { locInfo ->
                 async {
                     val forecast = getLocationForecast(locInfo, unit)
                     SummaryLocationTemperature(
                         locInfo.locationId,
-                        willBeWarmer = willBeAboveThresholdTomorrow(forecast,temperature)
+                        willBeWarmer = willBeAboveThresholdTomorrow(forecast, temperature)
                     )
                 }
 
@@ -47,10 +54,6 @@ class WeatherService {
         }
 
         val owmForecast = openWeatherMapClient.callWeatherApi(location, unit)
-        log.info("Datetime and temperatures:")
-        owmForecast.list.forEach { item ->
-            log.info("${item.dateTime}: ${item.main.temp}°C")
-        }
 
         val apiForecasts = owmForecast.list.map {
             TemperatureForecast(

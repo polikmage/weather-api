@@ -14,8 +14,9 @@ import io.ktor.server.routing.*
 fun Application.configureRouting() {
 
     install(ContentNegotiation) { json() }
-
-    val weatherService = WeatherService()
+    val apiKey = environment.config.property("weather.apiKey").getString()
+    val apiUrl = environment.config.property("weather.apiUrl").getString()
+    val weatherService = WeatherService(apiKey,apiUrl)
 
     routing {
         get("/") {
@@ -42,16 +43,30 @@ fun Application.configureRouting() {
                     )
                 )
 
+            if (locations.isEmpty()) {
+                return@get call.respond(
+                    HttpStatusCode.BadRequest,
+                    ErrorResponse(
+                        status = HttpStatusCode.BadRequest.value,
+                        error = "BadRequest",
+                        message = "No valid integer values in 'locations' parameter"
+                    )
+                )
+            }
+
 
             val locationInfos = locations.map { locId ->
                 LocationDictionary.getLocation(locId) ?: return@get call.respond(
                     HttpStatusCode.NotFound,
-                    "Coordinates for location: $locId not found"
+                    ErrorResponse(
+                        status = HttpStatusCode.NotFound.value,
+                        error = "NotFound",
+                        message = "Coordinates for location: $locId not found"
+                    )
                 )
             }
 
             val weatherUnit = WeatherUnitType.fromString(unit)
-            //val owmUnit = weatherUnitType.owmValue
 
             val response = weatherService.getSummary(weatherUnit, temperature, locationInfos)
             call.respond(response)

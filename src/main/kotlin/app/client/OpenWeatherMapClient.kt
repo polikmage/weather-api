@@ -12,15 +12,14 @@ import io.ktor.serialization.kotlinx.json.json
 import kotlinx.serialization.json.Json
 
 
-class OpenWeatherMapClient (){
-
+class OpenWeatherMapClient(
+    private val apiKey: String,
+    private val apiUrl: String
+) {
 
     suspend fun callWeatherApi(location: LocationDictionary.LocationInfo, unit: WeatherUnitType): OwmForecastResponse {
-        val apiKey = "567013658fe040b6718b4009ca831df5" // Replace with your key
-        //val lat = "50.0874654"
-        //val lon = "14.4212535"
-        val url = "https://api.openweathermap.org/data/2.5/forecast" +
-                "?lat=${location.lat}&lon=${location.lon}&appid=$apiKey&units=${unit.owmValue}"
+
+        val url = apiUrl +"?lat=${location.lat}&lon=${location.lon}&appid=$apiKey&units=${unit.owmValue}"
 
         val client = HttpClient(CIO) {
             install(ContentNegotiation) {
